@@ -1,6 +1,8 @@
 const { getStore } = require("@netlify/blobs");
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const NETLIFY_SITE_ID = process.env.NETLIFY_SITE_ID;
+const NETLIFY_AUTH_TOKEN = process.env.NETLIFY_AUTH_TOKEN;
 
 const AI_AGENT_QUERIES = [
   "ai-agent automation tool",
@@ -17,9 +19,7 @@ const fetchGitHubSkills = async () => {
 
   for (const query of AI_AGENT_QUERIES) {
     const response = await fetch(
-      `https://api.github.com/search/repositories?q=${encodeURIComponent(
-        query
-      )}&sort=stars&order=desc&per_page=10`,
+      `https://api.github.com/search/repositories?q=${encodeURIComponent(query)}&sort=stars&order=desc&per_page=10`,
       {
         headers: {
           Authorization: `Bearer ${GITHUB_TOKEN}`,
@@ -75,10 +75,14 @@ exports.handler = async (event) => {
   };
 
   try {
-    console.log("Fetching AI agent skills from GitHub...");
     const skills = await fetchGitHubSkills();
 
-    const store = getStore("skills-cache");
+    const store = getStore({
+      name: "skills-cache",
+      siteID: NETLIFY_SITE_ID,
+      token: NETLIFY_AUTH_TOKEN,
+    });
+
     await store.set(
       "latest",
       JSON.stringify({
@@ -88,7 +92,6 @@ exports.handler = async (event) => {
       })
     );
 
-    console.log(`✅ ${skills.length} skills cached successfully`);
     return {
       statusCode: 200,
       headers,
@@ -98,7 +101,6 @@ exports.handler = async (event) => {
       }),
     };
   } catch (err) {
-    console.error("Error:", err);
     return {
       statusCode: 500,
       headers,
