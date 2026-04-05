@@ -1,0 +1,9 @@
+{
+  "name": "ai-agent-skills",
+  "version": "1.0.0",
+  "description": "AI Agent Skills fetcher from GitHub",
+  "dependencies": {
+    "@netlify/blobs": "^7.3.0",
+    "@netlify/functions": "^2.6.0"
+  }
+}
