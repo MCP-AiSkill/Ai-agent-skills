@@ -1,38 +1,38 @@
 const { getStore } = require("@netlify/blobs");
 
+const NETLIFY_SITE_ID = process.env.NETLIFY_SITE_ID;
+const NETLIFY_AUTH_TOKEN = process.env.NETLIFY_AUTH_TOKEN;
+
 exports.handler = async (event) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
     "Content-Type": "application/json",
   };
 
-  // CORS preflight handle karo
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 200, headers, body: "" };
   }
 
   try {
-    const store = getStore("skills-cache");
+    const store = getStore({
+      name: "skills-cache",
+      siteID: NETLIFY_SITE_ID,
+      token: NETLIFY_AUTH_TOKEN,
+    });
+
     const cached = await store.get("latest");
 
     if (!cached) {
       return {
         statusCode: 404,
         headers,
-        body: JSON.stringify({
-          error: "Skills not fetched yet. Please wait for next scheduled run.",
-        }),
+        body: JSON.stringify({ error: "Skills not fetched yet." }),
       };
     }
 
     const data = JSON.parse(cached);
-
-    // Search/filter support karo
     const params = event.queryStringParameters || {};
     const search = params.search?.toLowerCase() || "";
-    const language = params.language?.toLowerCase() || "";
-    const topic = params.topic?.toLowerCase() || "";
 
     let skills = data.skills;
 
@@ -41,18 +41,6 @@ exports.handler = async (event) => {
         (s) =>
           s.name.toLowerCase().includes(search) ||
           s.description.toLowerCase().includes(search)
-      );
-    }
-
-    if (language) {
-      skills = skills.filter(
-        (s) => s.language.toLowerCase() === language
-      );
-    }
-
-    if (topic) {
-      skills = skills.filter((s) =>
-        s.topics.some((t) => t.toLowerCase().includes(topic))
       );
     }
 
@@ -66,11 +54,10 @@ exports.handler = async (event) => {
       }),
     };
   } catch (err) {
-    console.error("Error:", err);
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: "Server error" }),
+      body: JSON.stringify({ error: err.message }),
     };
   }
 };
