@@ -4,7 +4,3 @@
 
 [functions]
   node_bundler = "esbuild"
-
-[[scheduled-functions]]
-  name = "fetch-skills"
-  cron = "0 0 * * *"
