@@ -1,1 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Agent Skills</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f0f1a;
+      color: #fff;
+      min-height: 100vh;
+      padding: 30px 20px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      color: #a78bfa;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #6b7280;
+      font-size: 0.9rem;
+      margin-bottom: 30px;
+    }
+    .search-bar {
+      display: flex;
+      gap: 10px;
+      max-width: 600px;
+      margin: 0 auto 30px;
+    }
+    input {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 1.5px solid #4f46e5;
+      background: #1a1a2e;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+    }
+    input::placeholder { color: #6b7280; }
+    button {
+      padding: 12px 20px;
+      background: #7c3aed;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+    button:hover { background: #6d28d9; }
+    .stats {
+      text-align: center;
+      color: #6b7280;
+      font-size: 0.8rem;
+      margin-bottom: 20px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .card {
+      background: #1a1a2e;
+      border: 1.5px solid #2d2063;
+      border-radius: 14px;
+      padding: 20px;
+      transition: border-color 0.2s;
+    }
+    .card:hover { border-color: #7c3aed; }
+    .card-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #a78bfa;
+      margin-bottom: 6px;
+    }
+    .card-desc {
+      font-size: 0.82rem;
+      color: #9ca3af;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+    .card-meta {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .badge {
+      font-size: 0.7rem;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+    .badge-star { background: #3b1500; color: #fb923c; }
+    .badge-lang { background: #1e3a5f; color: #60a5fa; }
+    .badge-issue { background: #052e16; color: #4ade80; }
+    .topics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+    .topic {
+      font-size: 0.68rem;
+      padding: 2px 8px;
+      background: #2e1f5e;
+      color: #a78bfa;
+      border-radius: 20px;
+    }
+    .card-link {
+      display: inline-block;
+      font-size: 0.8rem;
+      color: #7c3aed;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .card-link:hover { color: #a78bfa; }
+    .loading {
+      text-align: center;
+      color: #6b7280;
+      font-size: 1rem;
+      margin-top: 60px;
+    }
+    .error {
+      text-align: center;
+      color: #ef4444;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
 
+<h1>🤖 AI Agent Skills</h1>
+<p class="subtitle">Trending & genuine AI agent skills from GitHub</p>
+
+<div class="search-bar">
+  <input type="text" id="searchInput" placeholder="Search skills... (e.g. langchain, python)" />
+  <button onclick="searchSkills()">Search</button>
+</div>
+
+<div class="stats" id="stats"></div>
+<div id="grid" class="grid">
+  <div class="loading">⏳ Loading skills...</div>
+</div>
+
+<script>
+  const API = "/.netlify/functions/get-skills";
+  let allSkills = [];
+
+  async function loadSkills(query = "") {
+    const grid = document.getElementById("grid");
+    const stats = document.getElementById("stats");
+    grid.innerHTML = '<div class="loading">⏳ Loading skills...</div>';
+
+    try {
+      const url = query ? `${API}?search=${encodeURIComponent(query)}` : API;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (!data.skills || data.skills.length === 0) {
+        grid.innerHTML = '<div class="error">No skills found.</div>';
+        return;
+      }
+
+      allSkills = data.skills;
+      const updated = data.updated_at
+        ? new Date(data.updated_at).toLocaleDateString()
+        : "N/A";
+      stats.textContent = `${data.total} skills found • Last updated: ${updated}`;
+
+      grid.innerHTML = allSkills.map(skill => `
+        <div class="card">
+          <div class="card-name">⚡ ${skill.name}</div>
+          <div class="card-desc">${skill.description}</div>
+          <div class="card-meta">
+            <span class="badge badge-star">⭐ ${skill.stars.toLocaleString()}</span>
+            <span class="badge badge-lang">${skill.language}</span>
+            <span class="badge badge-issue">🐛 ${skill.open_issues} issues</span>
+          </div>
+          ${skill.topics.length ? `
+            <div class="topics">
+              ${skill.topics.slice(0, 5).map(t => `<span class="topic">${t}</span>`).join("")}
+            </div>` : ""}
+          <a class="card-link" href="${skill.url}" target="_blank">View on GitHub →</a>
+        </div>
+      `).join("");
+
+    } catch (err) {
+      grid.innerHTML = '<div class="error">❌ Error loading skills. Please try again.</div>';
+    }
+  }
+
+  function searchSkills() {
+    const query = document.getElementById("searchInput").value.trim();
+    loadSkills(query);
+  }
+
+  document.getElementById("searchInput").addEventListener("keypress", (e) => {
+    if (e.key === "Enter") searchSkills();
+  });
+
+  loadSkills();
+</script>
+
+</body>
+</html>
